@@ -1,5 +1,4 @@
 import logging
-import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler, CallbackQueryHandler
 
@@ -11,6 +10,8 @@ logger = logging.getLogger(__name__)
 WAITING_FOR_SCREENSHOT, WAITING_FOR_TXID, WAITING_FOR_USERNAME, WAITING_FOR_PASSWORD = range(4)
 
 # Bot and admin details
+BOT_TOKEN = '7976144960:AAFDcAer9C4feU3LGm8gFPjkRAY5tV5bnmA'
+ADMIN_CHAT_ID = '7827532625'  # @tkingbeast
 SUPPORT_LINK = 'https://wa.me/251905243667?text=Hello%20tkingbeast%20support%20failed%20to%20submit%20my%20payment'
 
 # In-memory storage for pending requests
@@ -93,7 +94,7 @@ async def handle_password(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         # Send photo to admin and store message ID
         request = pending_requests[user_id]
         sent_photo = await context.bot.send_photo(
-            chat_id=os.getenv('ADMIN_CHAT_ID'),
+            chat_id=ADMIN_CHAT_ID,
             photo=request['photo'],
             caption=f"New request from {update.effective_user.first_name} (ID: {user_id}):\nTXID: {request['txid']}\nUsername: {request['username']}\nPassword: {request['password']}"
         )
@@ -106,7 +107,7 @@ async def handle_password(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         sent_buttons = await context.bot.send_message(
-            chat_id=os.getenv('ADMIN_CHAT_ID'),
+            chat_id=ADMIN_CHAT_ID,
             text="Approve or decline?",
             reply_markup=reply_markup
         )
@@ -128,12 +129,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         request = pending_requests.get(user_id)
         if not request:
-            await context.bot.send_message(chat_id=os.getenv('ADMIN_CHAT_ID'), text="Request not found.")
+            await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text="Request not found.")
             return
 
         # Delete photo and button messages
-        await context.bot.delete_message(chat_id=os.getenv('ADMIN_CHAT_ID'), message_id=request['photo_msg_id'])
-        await context.bot.delete_message(chat_id=os.getenv('ADMIN_CHAT_ID'), message_id=request['button_msg_id'])
+        await context.bot.delete_message(chat_id=ADMIN_CHAT_ID, message_id=request['photo_msg_id'])
+        await context.bot.delete_message(chat_id=ADMIN_CHAT_ID, message_id=request['button_msg_id'])
 
         if data.startswith('approve_'):
             thank_you_msg = (
@@ -155,7 +156,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     except Exception as e:
         logger.error(f"Error in handle_callback: {e}")
         await context.bot.send_message(
-            chat_id=os.getenv('ADMIN_CHAT_ID'),
+            chat_id=ADMIN_CHAT_ID,
             text=f"Error processing your action. For support: {SUPPORT_LINK}"
         )
 
@@ -175,15 +176,9 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         await update.message.reply_text(f"Error occurred. Please start again with /start. For support: {SUPPORT_LINK}")
         return ConversationHandler.END
 
-async def main() -> None:
+def main() -> None:
     try:
-        # Get token from environment variable
-        TOKEN = os.getenv('BOT_TOKEN')
-        if not TOKEN:
-            logger.error("BOT_TOKEN not set in environment variables")
-            return
-
-        application = Application.builder().token(TOKEN).build()
+        application = Application.builder().token(BOT_TOKEN).build()
 
         conv_handler = ConversationHandler(
             entry_points=[CommandHandler('start', start)],
@@ -200,18 +195,9 @@ async def main() -> None:
         application.add_handler(CallbackQueryHandler(handle_callback))
         application.add_handler(CommandHandler('myid', myid))
 
-        # Webhook setup for Render
-        PORT = int(os.environ.get('PORT', 8443))
-        await application.bot.set_webhook(f"https://tking-ebook-bot.onrender.com/{TOKEN}")
-        await application.run_webhook(
-            listen="0.0.0.0",
-            port=PORT,
-            url_path=TOKEN,
-            webhook_url=f"https://tking-ebook-bot.onrender.com/{TOKEN}"
-        )
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
     except Exception as e:
         logger.error(f"Error in main: {e}")
 
 if __name__ == '__main__':
-    import asyncio
-    asyncio.run(main())
+    main()
