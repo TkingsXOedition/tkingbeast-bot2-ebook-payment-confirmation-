@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 WAITING_FOR_SCREENSHOT, WAITING_FOR_TXID, WAITING_FOR_USERNAME, WAITING_FOR_PASSWORD = range(4)
 
 # Bot and admin details
-BOT_TOKEN = '7976144960:AAFDcAer9C4feU3LGm8gFPjkRAY5tV5bnmA'
+BOT_TOKEN = '7566010892:AAGUJ8uxo1lD7NyTQ2E0DtUYOcGcxxZWOGI'
 ADMIN_CHAT_ID = '7827532625'  # @tkingbeast
 SUPPORT_LINK = 'https://wa.me/251905243667?text=Hello%20tkingbeast%20support%20failed%20to%20submit%20my%20payment'
 
